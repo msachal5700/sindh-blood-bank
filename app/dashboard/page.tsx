@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Drop from "@/components/Drop";
 
 const GROUPS = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
 const statusTag = (s: string) => s === "FULFILLED" || s === "APPROVED" || s === "COMPLETED" ? "tag green" : s === "PENDING" || s === "BOOKED" ? "tag amber" : s === "REJECTED" || s === "CANCELLED" ? "tag red" : "tag grey";
@@ -9,6 +10,38 @@ const Bar = ({ label, value, max, cls }: any) => (
     <div className="bar-track"><div className={`bar-fill ${cls || ""}`} style={{ width: `${max ? Math.min(100, (value / max) * 100) : 0}%` }} /></div>
     <strong>{value}</strong></div>
 );
+
+function SplitDonut({ free, paid, exchange }: { free: number; paid: number; exchange: number }) {
+  const total = Math.max(1, free + paid + exchange);
+  const C = 2 * Math.PI * 34;
+  const segs = [
+    { v: free, color: "#c21847", label: "Free" },
+    { v: paid, color: "#f5a623", label: "Paid" },
+    { v: exchange, color: "#0f766e", label: "Exchange" },
+  ];
+  let acc = 0;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+      <svg width="110" height="110" viewBox="0 0 100 100" role="img" aria-label="Free, paid and exchange split">
+        <circle cx="50" cy="50" r="34" fill="none" stroke="#f6e8ea" strokeWidth="15" />
+        {segs.map((s) => {
+          const frac = s.v / total; const off = acc; acc += frac;
+          return (
+            <circle key={s.label} cx="50" cy="50" r="34" fill="none" stroke={s.color} strokeWidth="15"
+              strokeDasharray={`${Math.max(0, frac * C - 2)} ${C}`} strokeDashoffset={-off * C}
+              transform="rotate(-90 50 50)" />
+          );
+        })}
+        <text x="50" y="54" textAnchor="middle" fontFamily="system-ui" fontWeight="800" fontSize="15" fill="#7f1d1d">{free + paid + exchange}</text>
+      </svg>
+      <div style={{ fontFamily: "system-ui", fontSize: ".9rem" }}>
+        {segs.map((s) => (
+          <p key={s.label} style={{ margin: "4px 0" }}><span style={{ display: "inline-block", width: 12, height: 12, borderRadius: 3, background: s.color, marginRight: 8 }} />{s.label}: <strong>{s.v}</strong> units ({Math.round((s.v / total) * 100)}%)</p>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -73,13 +106,17 @@ export default function Dashboard() {
   const banks = pub?.results?.flatMap((c: any) => c.banks.map((b: any) => ({ ...b, city: c.city }))) || [];
   const maxCity = stats ? Math.max(1, ...stats.perCity.map((c: any) => Math.max(c.free, c.demand))) : 1;
   const maxGroup = stats ? Math.max(1, ...stats.byGroup.map((g: any) => g.free + g.paid + g.exchange)) : 1;
+  const myDonations = appts.donations || [];
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}>
-        <div>
-          <h1 style={{ marginBottom: 2 }}>{me.role === "ADMIN" ? "Master Dashboard" : me.role === "BANK" ? `${me.bank?.name || "Blood Bank"} — Branch Dashboard` : `Assalam-o-Alaikum, ${me.name.split(" ")[0]}`}</h1>
-          <p className="muted" style={{ marginTop: 0 }}>{me.email} · <span className="tag">{me.role}</span>{me.bloodGroup ? <> · Blood group <strong>{me.bloodGroup}</strong></> : ""}{me.city ? <> · {me.city}</> : ""}{me.bank ? <> · {me.bank.city}</> : ""}</p>
+      <div className="dash-head">
+        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          <span className="bob"><Drop fill={me.role === "DONOR" ? 0.9 : me.role === "PATIENT" ? 0.55 : 0.75} size={54} /></span>
+          <div>
+            <h1 style={{ marginBottom: 2 }}>{me.role === "ADMIN" ? "Master Dashboard" : me.role === "BANK" ? `${me.bank?.name || "Blood Bank"} — Branch Dashboard` : `Assalam-o-Alaikum, ${me.name.split(" ")[0]}`}</h1>
+            <p className="muted" style={{ marginTop: 0 }}>{me.email} · <span className="tag">{me.role}</span>{me.bloodGroup ? <> · Blood group <strong>{me.bloodGroup}</strong></> : ""}{me.city ? <> · {me.city}</> : ""}{me.bank ? <> · {me.bank.city}</> : ""}</p>
+          </div>
         </div>
         <button className="btn" onClick={logout}>Sign out</button>
       </div>
@@ -89,41 +126,39 @@ export default function Dashboard() {
         <>
           <div className="grid grid-3">
             {[["Free units", stats.totals.free], ["Open demand (units)", stats.totals.openDemand], ["Requests", stats.totals.requests], ["Fulfilled", stats.totals.fulfilled], ["Donations", stats.totals.donations], ["Branches / Donors", `${stats.totals.branches} / ${stats.totals.donors}`]].map(([l, v]: any) => (
-              <div key={l} className="card stat"><div className="num">{v}</div><div className="muted">{l}</div></div>
+              <div key={l} className="card stat tilt"><div className="num">{v}</div><div className="muted">{l}</div></div>
             ))}
           </div>
           <div className="grid grid-2" style={{ marginTop: 16 }}>
-            <div className="card"><h3>Demand vs Free blood — per city</h3>
-              {stats.perCity.map((c: any) => (<div key={c.city}><Bar label={`${c.city} free`} value={c.free} max={maxCity} cls="free" /><Bar label={`${c.city} demand`} value={c.demand} max={maxCity} cls="demand" /></div>))}
+            <div className="card tilt"><h3>Demand vs Free blood — per city</h3>
+              {stats.perCity.map((c: any) => (<div key={c.city}><Bar label={`${c.city} free`} value={c.free} max={maxCity} /><Bar label={`${c.city} demand`} value={c.demand} max={maxCity} cls="demand" /></div>))}
             </div>
-            <div className="card"><h3>Stock by blood group (all Sindh)</h3>
+            <div className="card tilt"><h3>Stock by blood group (all Sindh)</h3>
               {stats.byGroup.map((g: any) => <Bar key={g.group} label={g.group} value={g.free + g.paid + g.exchange} max={maxGroup} />)}
               <h3 style={{ marginTop: 18 }}>Free / Paid / Exchange split</h3>
-              <Bar label="Free" value={stats.totals.free} max={stats.totals.free + stats.totals.paid + stats.totals.exchange} cls="free" />
-              <Bar label="Paid" value={stats.totals.paid} max={stats.totals.free + stats.totals.paid + stats.totals.exchange} cls="demand" />
-              <Bar label="Exchange" value={stats.totals.exchange} max={stats.totals.free + stats.totals.paid + stats.totals.exchange} />
+              <SplitDonut free={stats.totals.free} paid={stats.totals.paid} exchange={stats.totals.exchange} />
             </div>
           </div>
-          <div className="card" style={{ marginTop: 16 }}><h3>All requests</h3><ReqTable requests={requests} showPatient /></div>
+          <div className="card" style={{ marginTop: 16 }}><h3>All requests</h3><div className="table-scroll"><ReqTable requests={requests} showPatient /></div></div>
         </>
       )}
 
       {me.role === "BANK" && (
         <>
           <div className="card"><h3 style={{ marginTop: 4 }}>Branch stock — edit and save per group</h3>
-            <table><thead><tr><th>Group</th><th>Free</th><th>Paid</th><th>Rs / unit</th><th>Exchange</th><th></th></tr></thead>
+            <div className="table-scroll"><table><thead><tr><th>Group</th><th>Free</th><th>Paid</th><th>Rs / unit</th><th>Exchange</th><th></th></tr></thead>
               <tbody>{GROUPS.map((g) => { const row = inventory.find((i) => i.bloodGroup === g); if (!row) return null; const e2 = edit[g] || {};
                 const num = (key: string, val: number) => <input type="number" min={0} style={{ width: 76 }} value={e2[key] ?? val} onChange={(ev) => setEdit({ ...edit, [g]: { ...e2, [key]: Number(ev.target.value) } })} />;
                 return (<tr key={g}><td><strong>{g}</strong></td><td>{num("free", row.freeUnits)}</td><td>{num("paid", row.paidUnits)}</td><td>{num("price", row.paidPrice)}</td><td>{num("exch", row.exchangeUnits)}</td>
                   <td><button className="btn btn-primary btn-sm" onClick={() => saveStock(g)}>Save</button></td></tr>); })}
-              </tbody></table>
+              </tbody></table></div>
           </div>
-          <div className="card" style={{ marginTop: 16 }}><h3>Incoming requests</h3><ReqTable requests={requests} showPatient onAct={act} /></div>
+          <div className="card" style={{ marginTop: 16 }}><h3>Incoming requests</h3><div className="table-scroll"><ReqTable requests={requests} showPatient onAct={act} /></div></div>
           <div className="grid grid-2" style={{ marginTop: 16 }}>
-            <div className="card"><h3>Upcoming donation appointments</h3>
+            <div className="card tilt"><h3>Upcoming donation appointments</h3>
               {appts.appointments.length === 0 ? <p className="muted">No appointments yet.</p> : appts.appointments.map((a: any) => <p key={a.id} style={{ fontFamily: "system-ui" }}>{new Date(a.date).toLocaleDateString()} — {a.donor?.name} ({a.donor?.bloodGroup}) <span className={statusTag(a.status)}>{a.status}</span></p>)}
             </div>
-            <div className="card"><h3>Donations received</h3>
+            <div className="card tilt"><h3>Donations received</h3>
               {appts.donations.length === 0 ? <p className="muted">No donations recorded yet.</p> : appts.donations.slice(0, 8).map((d: any) => <p key={d.id} style={{ fontFamily: "system-ui" }}>{new Date(d.date).toLocaleDateString()} — {d.donor?.name} · {d.bloodGroup} · {d.units} unit(s)</p>)}
             </div>
           </div>
@@ -136,30 +171,43 @@ export default function Dashboard() {
             <form onSubmit={createRequest}><div className="grid grid-3" style={{ gap: 12 }}>
               <div><label>Blood bank</label><select value={reqForm.bankId} onChange={(e) => setReqForm({ ...reqForm, bankId: e.target.value })}>{banks.map((b: any) => <option key={b.id} value={b.id}>{b.name} — {b.city}</option>)}</select></div>
               <div><label>Blood group</label><select value={reqForm.bloodGroup} onChange={(e) => setReqForm({ ...reqForm, bloodGroup: e.target.value })}>{GROUPS.map((g) => <option key={g}>{g}</option>)}</select></div>
-              <div><label>Mode</label><select value={reqForm.mode} onChange={(e) => setReqForm({ ...reqForm, mode: e.target.value })}><option value="FREE">Free</option><option value="PAID">Paid</option><option value="EXCHANGE">Exchange</option></select></div>
               <div><label>Units</label><input type="number" min={1} value={reqForm.units} onChange={(e) => setReqForm({ ...reqForm, units: Number(e.target.value) })} /></div>
               <div><label>Urgency</label><select value={reqForm.urgency} onChange={(e) => setReqForm({ ...reqForm, urgency: e.target.value })}><option>Normal</option><option>Urgent</option><option>Critical</option></select></div>
               <div><label>Hospital</label><input value={reqForm.hospital} onChange={(e) => setReqForm({ ...reqForm, hospital: e.target.value })} /></div>
+              <div><label>Mode</label>
+                <div className="mode-seg" role="radiogroup" aria-label="Request mode">
+                  {[["FREE", "Free"], ["PAID", "Paid"], ["EXCHANGE", "Exchange"]].map(([v, l]) => (
+                    <button key={v} type="button" role="radio" aria-checked={reqForm.mode === v} className={reqForm.mode === v ? "selected" : ""} onClick={() => setReqForm({ ...reqForm, mode: v })}>{l}</button>
+                  ))}
+                </div>
+              </div>
             </div><p><button className="btn btn-primary">Send request</button></p></form>
           </div>
-          <div className="card" style={{ marginTop: 16 }}><h3>My requests</h3><ReqTable requests={requests} onAct={act} mine /></div>
+          <div className="card" style={{ marginTop: 16 }}><h3>My requests</h3><div className="table-scroll"><ReqTable requests={requests} onAct={act} mine /></div></div>
         </>
       )}
 
       {me.role === "DONOR" && (
         <>
-          <div className="card"><h3 style={{ marginTop: 4 }}>Book a donation</h3>
+          <div className="card tilt"><h3 style={{ marginTop: 4 }}>My donor profile</h3>
+            <p style={{ fontFamily: "system-ui", margin: "6px 0" }}>
+              <strong>{me.name}</strong> · Blood group <span className="pill-free">{me.bloodGroup || "—"}</span>
+              {me.city ? <> · {me.city}</> : ""} · {myDonations.length} donation(s) so far · {appts.appointments.length} upcoming appointment(s)
+            </p>
+            <p className="muted" style={{ margin: 0 }}>Every donation can save up to three lives. Your next fifteen minutes could be someone's whole future.</p>
+          </div>
+          <div className="card" style={{ marginTop: 16 }}><h3 style={{ marginTop: 4 }}>Book a donation appointment</h3>
             <form onSubmit={book}><div className="grid grid-2" style={{ gap: 12 }}>
               <div><label>Blood bank branch</label><select value={bookForm.bankId} onChange={(e) => setBookForm({ ...bookForm, bankId: e.target.value })}>{banks.map((b: any) => <option key={b.id} value={b.id}>{b.name} — {b.city}</option>)}</select></div>
               <div><label>Date</label><input type="date" value={bookForm.date} onChange={(e) => setBookForm({ ...bookForm, date: e.target.value })} /></div>
             </div><p><button className="btn btn-primary">Book donation visit</button></p></form>
           </div>
           <div className="grid grid-2" style={{ marginTop: 16 }}>
-            <div className="card"><h3>My appointments</h3>
+            <div className="card tilt"><h3>My appointments</h3>
               {appts.appointments.length === 0 ? <p className="muted">No appointments yet — book your first donation above.</p> : appts.appointments.map((a: any) => <p key={a.id} style={{ fontFamily: "system-ui" }}>{new Date(a.date).toLocaleDateString()} — {a.bank?.name} ({a.bank?.city?.name}) <span className={statusTag(a.status)}>{a.status}</span></p>)}
             </div>
-            <div className="card"><h3>My donation history</h3>
-              {appts.donations.length === 0 ? <p className="muted">No donations recorded yet.</p> : appts.donations.map((d: any) => <p key={d.id} style={{ fontFamily: "system-ui" }}>🩸 {new Date(d.date).toLocaleDateString()} — {d.bloodGroup} · {d.units} unit at {d.bank?.name}</p>)}
+            <div className="card tilt"><h3>My donation history</h3>
+              {myDonations.length === 0 ? <p className="muted">No donations recorded yet.</p> : myDonations.map((d: any) => <p key={d.id} style={{ fontFamily: "system-ui" }}>🩸 {new Date(d.date).toLocaleDateString()} — {d.bloodGroup} · {d.units} unit at {d.bank?.name}</p>)}
             </div>
           </div>
         </>
