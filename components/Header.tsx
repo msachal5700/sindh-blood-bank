@@ -44,10 +44,14 @@ export default function Header() {
         <Link href="/" className="hdr-drop" aria-label="Sindh Blood Bank — home">
           <WhiteDrop />
         </Link>
-        <Link href="/" className="hdr-pill">
-          Find Blood
-          {onHome && <span className="hdr-bar" />}
-        </Link>
+        {onHome ? (
+          <Link href="/" className="hdr-pill">
+            Find Blood
+            <span className="hdr-bar" />
+          </Link>
+        ) : (
+          <Link href="/" className="hdr-textlink">Find Blood</Link>
+        )}
       </div>
       <nav>
         {me ? (
