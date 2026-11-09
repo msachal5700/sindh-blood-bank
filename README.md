@@ -80,3 +80,5 @@ real-world launch.
   (`auth`, `public`, `requests`, `inventory`, `appointments`, `admin/stats`)
 - `lib/` — Prisma client, auth/session helpers, shared data (blood groups, haversine)
 - `prisma/schema.prisma` — Postgres schema · `prisma/seed.mjs` — seed script
+
+Live at https://sindh-blood-bank.vercel.app
