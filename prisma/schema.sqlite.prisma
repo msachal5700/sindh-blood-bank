@@ -1,0 +1,104 @@
+// Sindh Blood Bank — production schema (Postgres for Vercel + Neon/Supabase)
+// For LOCAL verification with SQLite, use schema.sqlite.prisma (same models).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model City {
+  id    Int         @id @default(autoincrement())
+  name  String      @unique
+  lat   Float
+  lng   Float
+  banks BloodBank[]
+  users User[]
+}
+
+model BloodBank {
+  id           Int           @id @default(autoincrement())
+  name         String
+  address      String
+  phone        String
+  hours        String        @default("9:00 AM – 8:00 PM")
+  cityId       Int
+  city         City          @relation(fields: [cityId], references: [id])
+  inventory    Inventory[]
+  requests     BloodRequest[]
+  donations    Donation[]
+  appointments Appointment[]
+  staff        User[]
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  passwordHash String
+  phone        String        @default("")
+  role         String // ADMIN | BANK | DONOR | PATIENT
+  bloodGroup   String?
+  hospital     String?
+  cityId       Int?
+  city         City?         @relation(fields: [cityId], references: [id])
+  bankId       Int?
+  bank         BloodBank?    @relation(fields: [bankId], references: [id])
+  requests     BloodRequest[] @relation("PatientRequests")
+  donations    Donation[]
+  appointments Appointment[]
+  createdAt    DateTime      @default(now())
+}
+
+model Inventory {
+  id            Int       @id @default(autoincrement())
+  bankId        Int
+  bank          BloodBank @relation(fields: [bankId], references: [id])
+  bloodGroup    String
+  freeUnits     Int       @default(0)
+  paidUnits     Int       @default(0)
+  paidPrice     Int       @default(0) // Rs per unit
+  exchangeUnits Int       @default(0)
+
+  @@unique([bankId, bloodGroup])
+}
+
+model BloodRequest {
+  id         Int       @id @default(autoincrement())
+  patientId  Int
+  patient    User      @relation("PatientRequests", fields: [patientId], references: [id])
+  bankId     Int
+  bank       BloodBank @relation(fields: [bankId], references: [id])
+  bloodGroup String
+  mode       String // FREE | PAID | EXCHANGE
+  units      Int       @default(1)
+  hospital   String    @default("")
+  urgency    String    @default("Normal") // Normal | Urgent | Critical
+  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED | FULFILLED | CANCELLED
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model Donation {
+  id         Int       @id @default(autoincrement())
+  donorId    Int
+  donor      User      @relation(fields: [donorId], references: [id])
+  bankId     Int
+  bank       BloodBank @relation(fields: [bankId], references: [id])
+  bloodGroup String
+  units      Int       @default(1)
+  date       DateTime  @default(now())
+}
+
+model Appointment {
+  id        Int       @id @default(autoincrement())
+  donorId   Int
+  donor     User      @relation(fields: [donorId], references: [id])
+  bankId    Int
+  bank      BloodBank @relation(fields: [bankId], references: [id])
+  date      DateTime
+  status    String    @default("BOOKED") // BOOKED | COMPLETED | CANCELLED
+  createdAt DateTime  @default(now())
+}
