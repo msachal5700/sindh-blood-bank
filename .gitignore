@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+.env
+.env*.local
+*.db
+*.db-journal
+TEST_ACCOUNTS.local.md
+.DS_Store
