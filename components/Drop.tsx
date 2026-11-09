@@ -14,7 +14,7 @@ export default function Drop({ fill = 0, size = 120 }: { fill?: number; size?: n
   // Drop interior: y from 18 (tip area inside) to 92 (bottom). Fill rises from bottom.
   const fillTop = 92 - f * 74;
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={happy ? "A full, happy blood drop" : "An empty blood drop waiting to be filled"}>
+    <svg width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={happy ? "A full, happy blood drop" : tear ? "An empty blood drop waiting to be filled" : "A blood drop, filling up"}>
       <defs>
         <clipPath id={clipId}>
           <path d="M50 4 C50 4 16 44 16 64 a34 32 0 0 0 68 0 C84 44 50 4 50 4 Z" />
