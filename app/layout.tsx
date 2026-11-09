@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
+import SiteFooter from "@/components/SiteFooter";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -21,10 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Header />
         <main>{children}</main>
-        <footer className="site-footer">
-          <p>🩸 Sindh Blood Bank — Karachi · Hyderabad · Sukkur · Ghotki · Larkana · Mirpurkhas · Nawabshah · Khairpur</p>
-          <p className="muted">Give blood. Give time back. One donation can save up to three lives.</p>
-        </footer>
+        <SiteFooter />
       </body>
     </html>
   );
