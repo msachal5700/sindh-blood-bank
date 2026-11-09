@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import Drop from "./Drop";
+import { usePathname, useRouter } from "next/navigation";
 
 const TINT: Record<string, string> = {
   DONOR: "tint-donor",
@@ -11,8 +10,17 @@ const TINT: Record<string, string> = {
   ADMIN: "tint-admin",
 };
 
+function WhiteDrop() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 100 100" aria-hidden="true">
+      <path d="M50 5 C50 5 17 45 17 64 a33 31 0 0 0 66 0 C83 45 50 5 50 5 Z" fill="#ffffff" />
+    </svg>
+  );
+}
+
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [me, setMe] = useState<any>(null);
 
   useEffect(() => {
@@ -21,22 +29,36 @@ export default function Header() {
 
   const onDashboard = pathname?.startsWith("/dashboard");
   const tint = onDashboard && me?.role ? TINT[me.role] || "" : "";
+  const onHome = pathname === "/";
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    setMe(null);
+    router.push("/");
+    router.refresh();
+  }
 
   return (
     <header className={`site-header ${tint}`}>
-      <Link href="/" className="brand">
-        <span className="brand-drop"><Drop fill={0.85} size={30} /></span>
-        Sindh Blood Bank
-      </Link>
+      <div className="hdr-left">
+        <Link href="/" className="hdr-drop" aria-label="Sindh Blood Bank — home">
+          <WhiteDrop />
+        </Link>
+        <Link href="/" className="hdr-pill">
+          Find Blood
+          {onHome && <span className="hdr-bar" />}
+        </Link>
+      </div>
       <nav>
-        <Link href="/" className="navlink">Find Blood</Link>
-        <Link href="/dashboard" className="navlink">Dashboard</Link>
         {me ? (
-          <span className="tag" style={{ textTransform: "none", fontSize: ".82rem" }}>{me.name?.split(" ")[0]} · {me.role}</span>
+          <>
+            <Link href="/dashboard" className="hdr-pill">Dashboard</Link>
+            <button className="hdr-signout" onClick={logout}>Sign out</button>
+          </>
         ) : (
           <>
-            <Link href="/login" className="btn btn-sm" style={{ height: 40, display: "inline-flex", alignItems: "center" }}>Sign in</Link>
-            <Link href="/register" className="btn btn-primary join-btn">Join Free</Link>
+            <Link href="/login" className="hdr-signin">Sign in</Link>
+            <Link href="/register" className="hdr-pill">Join free</Link>
           </>
         )}
       </nav>
