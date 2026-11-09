@@ -14,8 +14,33 @@ export async function GET(req: Request) {
   const ordered = [...cities].sort((a, b) =>
     haversineKm(origin.lat, origin.lng, a.lat, a.lng) - haversineKm(origin.lat, origin.lng, b.lat, b.lng));
   const banks = await prisma.bloodBank.findMany({ include: { city: true, inventory: true } });
+  // Live network stats shown in the hero / waiting sections (counts only).
+  const [pending, fulfilledRequests, totalDonations, donorCount, invAgg] = await Promise.all([
+    prisma.bloodRequest.findMany({ where: { status: "PENDING" }, select: { units: true, bankId: true } }),
+    prisma.bloodRequest.count({ where: { status: "FULFILLED" } }),
+    prisma.donation.count(),
+    prisma.user.count({ where: { role: "DONOR" } }),
+    prisma.inventory.aggregate({ _sum: { freeUnits: true, paidUnits: true, exchangeUnits: true } }),
+  ]);
+  const bankCity = new Map(banks.map((b) => [b.id, b.cityId]));
+  const demandByCity = new Map<number, number>();
+  for (const r of pending) {
+    const cid = bankCity.get(r.bankId);
+    if (cid) demandByCity.set(cid, (demandByCity.get(cid) ?? 0) + r.units);
+  }
+  const stats = {
+    pendingRequests: pending.length,
+    openDemand: pending.reduce((s, r) => s + r.units, 0),
+    fulfilledRequests,
+    totalDonations,
+    donorCount,
+    totalFree: invAgg._sum.freeUnits ?? 0,
+    totalPaid: invAgg._sum.paidUnits ?? 0,
+    totalExchange: invAgg._sum.exchangeUnits ?? 0,
+  };
   const result = ordered.map((city) => ({
     city: city.name, cityId: city.id,
+    openDemand: demandByCity.get(city.id) ?? 0,
     distanceKm: haversineKm(origin.lat, origin.lng, city.lat, city.lng),
     banks: banks.filter((b) => b.cityId === city.id).map((b) => {
       const inv = Object.fromEntries(b.inventory.map((i) => [i.bloodGroup, i]));
@@ -32,5 +57,5 @@ export async function GET(req: Request) {
       };
     }),
   })).filter((c) => c.banks.length > 0);
-  return NextResponse.json({ cities, groups: BLOOD_GROUPS, originCity: origin?.name, results: result });
+  return NextResponse.json({ cities, groups: BLOOD_GROUPS, originCity: origin?.name, stats, results: result });
 }
