@@ -39,11 +39,13 @@ export default function Drop({ fill = 0, size = 120 }: { fill?: number; size?: n
         <ellipse cx="69" cy="72" rx="11" ry="17" fill="#f4c9d1" opacity="0.45" />
         <ellipse cx="30" cy="38" rx="9" ry="13" fill="#ffffff" opacity="0.7" />
       </g>
-      {/* red fill, clipped to the drop */}
-      <g clipPath={`url(#${clipId})`}>
-        <rect x="10" y={fillTop} width="80" height="90" fill={`url(#red-${uid})`} style={{ transition: "y .8s ease" }} />
-        <ellipse cx="50" cy={fillTop} rx="36" ry="4.5" fill="#ef6d8c" opacity="0.75" style={{ transition: "cy .8s ease" }} />
-      </g>
+      {/* red fill, clipped to the drop — hidden entirely when empty */}
+      {f > 0.01 && (
+        <g clipPath={`url(#${clipId})`}>
+          <rect x="10" y={fillTop} width="80" height="90" fill={`url(#red-${uid})`} style={{ transition: "y .8s ease" }} />
+          <ellipse cx="50" cy={fillTop} rx="36" ry="4.5" fill="#ef6d8c" opacity="0.75" style={{ transition: "cy .8s ease" }} />
+        </g>
+      )}
       {/* outline + gloss */}
       <path d="M50 4 C50 4 16 44 16 64 a34 32 0 0 0 68 0 C84 44 50 4 50 4 Z" fill="none" stroke="#8f1030" strokeWidth="1.6" opacity="0.35" />
       <ellipse cx="36" cy="52" rx="6" ry="11" fill="#ffffff" opacity="0.5" transform="rotate(-18 36 52)" />
