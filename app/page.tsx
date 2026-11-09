@@ -97,7 +97,7 @@ export default function Home() {
   useEffect(() => {
     const onScroll = () => {
       const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      setScrollFill(0.12 + Math.min(0.78, (window.scrollY / max) * 1.4));
+      setScrollFill(Math.min(0.9, (window.scrollY / max) * 1.35));
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
