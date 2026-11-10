@@ -42,3 +42,5 @@ if you re-seed your own database, the seed writes a fresh set with new random pa
 ## Notes
 - `app/api/admin/seed/route.ts` is a permanently disabled leftover (returns 404) — safe to delete.
 - Never commit `.env` files or `TEST_ACCOUNTS.local.md` to a public repo.
+
+Auth pages (Patient / Donor register, Sign in) matched to the original app design — Nov 10, 2026.
