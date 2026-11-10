@@ -109,14 +109,6 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="demo-box">
-        <div className="demo-head">
-          <h3>Sample data for testing</h3>
-          <span className="demo-badge">DEMO DATA</span>
-        </div>
-        <p>This demo is pre-loaded with sample data from Sindh — 8 cities, 12 blood bank branches with stock, sample requests and donations — and test accounts for every role (Super Admin, blood bank branches, donors, and patients), each with its own dashboard. Test accounts are labeled “Test” wherever they appear. For everyone's safety, sign-in passwords are never shown inside the app: the platform owner shares the test account credentials separately. You can also create your own donor or patient account above — it takes a minute.</p>
-      </div>
-
       <QuoteBlock />
       {celebrate && (
         <Celebration name={celebrate.name} role={celebrate.role} onDone={() => { router.push("/dashboard"); router.refresh(); }} />
